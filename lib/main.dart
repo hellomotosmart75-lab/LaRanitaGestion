@@ -5,6 +5,8 @@ import 'pages/inicio_page.dart';
 import 'pages/ventas_page.dart';
 import 'pages/recetas_page.dart';
 import 'pages/stock_page.dart';
+import 'pages/empleados_page.dart';
+import 'pages/gastos_page.dart';
 
 void main() {
   runApp(const LaRanitaApp());
@@ -61,9 +63,8 @@ class _PrincipalState extends State<Principal> {
     _Modulo('Ventas', Icons.point_of_sale, () => const VentasPage()),
     _Modulo('Recetas e insumos', Icons.menu_book, () => const RecetasPage()),
     _Modulo('Stock y vencimientos', Icons.inventory_2, () => const StockPage()),
-    _Modulo('Empleados', Icons.groups, () => const Pronto('Empleados', 'etapa 3')),
-    _Modulo('Gastos e impuestos', Icons.receipt_long,
-        () => const Pronto('Gastos e impuestos', 'etapa 3')),
+    _Modulo('Empleados', Icons.groups, () => const EmpleadosPage()),
+    _Modulo('Gastos e impuestos', Icons.receipt_long, () => const GastosPage()),
     _Modulo('Rutas y clientes', Icons.local_shipping,
         () => const Pronto('Rutas y clientes', 'etapa 4')),
   ];
