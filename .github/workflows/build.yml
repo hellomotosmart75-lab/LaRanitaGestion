@@ -16,6 +16,8 @@ jobs:
         with:
           channel: stable
       - run: flutter create --platforms=android --project-name la_ranita_gestion --org com.laranita .
+      - name: Permiso de camara
+        run: sed -i 's|<application|<uses-permission android:name="android.permission.CAMERA"/>\n    <application|' android/app/src/main/AndroidManifest.xml
       - run: flutter pub get
       - run: dart run flutter_launcher_icons
       - run: flutter build apk --release
