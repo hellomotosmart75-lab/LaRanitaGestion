@@ -3,6 +3,8 @@ import 'theme.dart';
 import 'widgets/rana_logo.dart';
 import 'pages/inicio_page.dart';
 import 'pages/ventas_page.dart';
+import 'pages/recetas_page.dart';
+import 'pages/stock_page.dart';
 
 void main() {
   runApp(const LaRanitaApp());
@@ -36,7 +38,7 @@ class Pronto extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const RanaLogo(size: 90),
+            const RanaLogo(size: 160),
             const SizedBox(height: 12),
             Text(titulo, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             Text('Llega en la $etapa'),
@@ -57,10 +59,8 @@ class _PrincipalState extends State<Principal> {
   final List<_Modulo> modulos = [
     _Modulo('Inicio', Icons.home_rounded, () => const InicioPage()),
     _Modulo('Ventas', Icons.point_of_sale, () => const VentasPage()),
-    _Modulo('Recetas e insumos', Icons.menu_book,
-        () => const Pronto('Recetas e insumos', 'etapa 2')),
-    _Modulo('Stock y vencimientos', Icons.inventory_2,
-        () => const Pronto('Stock y vencimientos', 'etapa 2')),
+    _Modulo('Recetas e insumos', Icons.menu_book, () => const RecetasPage()),
+    _Modulo('Stock y vencimientos', Icons.inventory_2, () => const StockPage()),
     _Modulo('Empleados', Icons.groups, () => const Pronto('Empleados', 'etapa 3')),
     _Modulo('Gastos e impuestos', Icons.receipt_long,
         () => const Pronto('Gastos e impuestos', 'etapa 3')),
@@ -86,7 +86,7 @@ class _PrincipalState extends State<Principal> {
               ),
               child: Row(
                 children: const [
-                  RanaLogo(size: 72),
+                  RanaLogo(size: 90),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
