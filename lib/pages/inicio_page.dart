@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../db/database.dart';
+import '../db/db_gestion.dart';
+import '../db/db_stock.dart';
 import '../theme.dart';
 import '../utils.dart';
 
@@ -10,7 +12,9 @@ class InicioPage extends StatefulWidget {
 }
 
 class _InicioPageState extends State<InicioPage> {
-  double ventas = 0, costo = 0, meta = 20000;
+  double ventas = 0, costo = 0, metaManual = 20000, moUnidad = 0;
+  double meta = 20000, costoDia = 0, margen = 0;
+  bool auto = true, autoActiva = false;
   int unidades = 0;
 
   @override
@@ -22,35 +26,60 @@ class _InicioPageState extends State<InicioPage> {
   Future<void> cargar() async {
     final r = await Db.resumenDia(hoy());
     final m = await Db.getConfig('meta_diaria', '20000');
+    final a = await Db.getConfig('meta_auto', '1');
+    final info = await DbGestion.metaAutomatica();
+    final mo = await DbGestion.manoDeObraPorUnidad();
     if (!mounted) return;
     setState(() {
       ventas = r['total']!;
       costo = r['costo']!;
       unidades = r['unidades']!.round();
-      meta = double.tryParse(m) ?? 20000;
+      metaManual = double.tryParse(m) ?? 20000;
+      auto = a == '1';
+      autoActiva = auto && info['meta']! > 0;
+      meta = autoActiva ? info['meta']! : metaManual;
+      costoDia = info['costoDia']!;
+      margen = info['margen']!;
+      moUnidad = mo;
     });
   }
 
   Future<void> editarMeta() async {
-    final ctl = TextEditingController(text: meta.round().toString());
+    bool autoTmp = auto;
+    final ctl = TextEditingController(text: metaManual.round().toString());
     final ok = await showDialog<bool>(
       context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('Meta diaria de ventas'),
-        content: TextField(
-          controller: ctl,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-              labelText: 'Monto que cubre tus costos del día', prefixText: '\$ '),
+      builder: (c) => StatefulBuilder(
+        builder: (c, setD) => AlertDialog(
+          title: const Text('Meta diaria de ventas'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Calcular sola'),
+                subtitle: const Text('Con sueldos y gastos fijos'),
+                value: autoTmp,
+                onChanged: (v) => setD(() => autoTmp = v),
+              ),
+              TextField(
+                controller: ctl,
+                enabled: !autoTmp,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Meta manual', prefixText: '\$ '),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
+            FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Guardar')),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Guardar')),
-        ],
       ),
     );
     if (ok == true) {
-      await Db.setConfig('meta_diaria', ctl.text.trim());
+      await Db.setConfig('meta_auto', autoTmp ? '1' : '0');
+      await Db.setConfig('meta_diaria', numTxt(aNum(ctl.text)));
       cargar();
     }
   }
@@ -66,6 +95,15 @@ class _InicioPageState extends State<InicioPage> {
         : (nivel == 1
             ? 'Vas bien: faltan ${pesos(meta - ventas)} para cubrir costos.'
             : 'Atención: faltan ${pesos(meta - ventas)} para la meta del día.');
+
+    final double manoObra = unidades * moUnidad;
+    final double neta = ventas - costo - manoObra;
+
+    final String detalleMeta = autoActiva
+        ? 'Automática · costos fijos y sueldos ${pesos(costoDia)}/día ÷ margen ${(margen * 100).round()}%'
+        : (auto
+            ? 'Manual (cargá horas y gastos fijos para que se calcule sola)'
+            : 'Manual');
 
     return RefreshIndicator(
       onRefresh: cargar,
@@ -108,11 +146,17 @@ class _InicioPageState extends State<InicioPage> {
               Expanded(child: _Dato('Ganancia bruta', pesos(ventas - costo), Icons.savings)),
             ],
           ),
+          Row(
+            children: [
+              Expanded(child: _Dato('Mano de obra (est.)', pesos(manoObra), Icons.groups)),
+              Expanded(child: _Dato('Ganancia neta', pesos(neta), Icons.account_balance_wallet)),
+            ],
+          ),
           Card(
             child: ListTile(
               leading: const Icon(Icons.flag, color: Estanque.barro),
-              title: const Text('Meta diaria'),
-              subtitle: Text(pesos(meta)),
+              title: Text('Meta diaria: ${pesos(meta)}'),
+              subtitle: Text(detalleMeta),
               trailing: const Icon(Icons.edit),
               onTap: editarMeta,
             ),
@@ -120,7 +164,7 @@ class _InicioPageState extends State<InicioPage> {
           const Padding(
             padding: EdgeInsets.all(8),
             child: Text(
-              'Hoy la meta es manual. En la etapa 3 se calcula sola con sueldos, luz, gas e impuestos.',
+              'La mano de obra por unidad = sueldos del mes ÷ unidades vendidas del mes.',
               style: TextStyle(fontSize: 12, color: Estanque.barro),
             ),
           ),
