@@ -7,13 +7,14 @@ class Db {
   static Future<Database> get abrir async {
     if (_db != null) return _db!;
     final ruta = join(await getDatabasesPath(), 'la_ranita.db');
-    _db = await openDatabase(ruta, version: 1, onCreate: _crear);
+    _db = await openDatabase(ruta,
+        version: 2, onCreate: _crear, onUpgrade: _actualizar);
     return _db!;
   }
 
   static const _tablas = [
     'CREATE TABLE productos (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, codigo TEXT, costo REAL DEFAULT 0, precio REAL DEFAULT 0, precio_mayorista REAL DEFAULT 0, unidades_por_caja INTEGER DEFAULT 1)',
-    'CREATE TABLE ventas (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT NOT NULL, producto_id INTEGER NOT NULL, unidades INTEGER NOT NULL, total REAL NOT NULL, costo REAL NOT NULL, por_caja INTEGER DEFAULT 0)',
+    'CREATE TABLE ventas (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT NOT NULL, producto_id INTEGER NOT NULL, unidades INTEGER NOT NULL, total REAL NOT NULL, costo REAL NOT NULL, por_caja INTEGER DEFAULT 0, cliente_id INTEGER)',
     'CREATE TABLE insumos (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT NOT NULL, unidad TEXT, costo_unitario REAL DEFAULT 0, codigo TEXT)',
     'CREATE TABLE recetas (id INTEGER PRIMARY KEY AUTOINCREMENT, producto_id INTEGER, nombre TEXT NOT NULL, rinde INTEGER DEFAULT 1)',
     'CREATE TABLE receta_items (id INTEGER PRIMARY KEY AUTOINCREMENT, receta_id INTEGER, insumo_id INTEGER, cantidad REAL)',
@@ -45,6 +46,13 @@ class Db {
       'unidades_por_caja': 8,
     });
     await db.insert('config', {'clave': 'meta_diaria', 'valor': '20000'});
+  }
+
+  // Migraciones: no se pierde ningún dato
+  static Future<void> _actualizar(Database db, int viejo, int nuevo) async {
+    if (viejo < 2) {
+      await db.execute('ALTER TABLE ventas ADD COLUMN cliente_id INTEGER');
+    }
   }
 
   // ---------- Config ----------
@@ -81,6 +89,7 @@ class Db {
     required Map<String, dynamic> producto,
     required int unidades,
     required bool porCaja,
+    int? clienteId,
   }) async {
     final db = await abrir;
     final precio = porCaja
@@ -94,6 +103,7 @@ class Db {
       'total': precio * unidades,
       'costo': costo * unidades,
       'por_caja': porCaja ? 1 : 0,
+      'cliente_id': clienteId,
     });
   }
 
