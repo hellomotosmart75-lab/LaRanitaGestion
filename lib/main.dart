@@ -7,6 +7,8 @@ import 'pages/recetas_page.dart';
 import 'pages/stock_page.dart';
 import 'pages/empleados_page.dart';
 import 'pages/gastos_page.dart';
+import 'pages/clientes_page.dart';
+import 'pages/informe_page.dart';
 
 void main() {
   runApp(const LaRanitaApp());
@@ -31,24 +33,6 @@ class _Modulo {
   _Modulo(this.nombre, this.icono, this.pagina);
 }
 
-class Pronto extends StatelessWidget {
-  final String titulo, etapa;
-  const Pronto(this.titulo, this.etapa, {super.key});
-
-  @override
-  Widget build(BuildContext context) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const RanaLogo(size: 160),
-            const SizedBox(height: 12),
-            Text(titulo, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Text('Llega en la $etapa'),
-          ],
-        ),
-      );
-}
-
 class Principal extends StatefulWidget {
   const Principal({super.key});
   @override
@@ -65,8 +49,8 @@ class _PrincipalState extends State<Principal> {
     _Modulo('Stock y vencimientos', Icons.inventory_2, () => const StockPage()),
     _Modulo('Empleados', Icons.groups, () => const EmpleadosPage()),
     _Modulo('Gastos e impuestos', Icons.receipt_long, () => const GastosPage()),
-    _Modulo('Rutas y clientes', Icons.local_shipping,
-        () => const Pronto('Rutas y clientes', 'etapa 4')),
+    _Modulo('Rutas y clientes', Icons.local_shipping, () => const ClientesPage()),
+    _Modulo('Informe del día', Icons.mail, () => const InformePage()),
   ];
 
   @override
