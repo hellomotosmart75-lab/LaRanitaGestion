@@ -5,6 +5,14 @@ import '../db/db_clientes.dart';
 import '../theme.dart';
 import '../utils.dart';
 
+const _medios = ['efectivo', 'transferencia', 'qr'];
+
+String _emojiMedio(String m) =>
+    m == 'efectivo' ? '💵' : (m == 'transferencia' ? '🏦' : '📱');
+
+String _nombreMedio(String m) =>
+    m == 'efectivo' ? 'Efectivo' : (m == 'transferencia' ? 'Transferencia' : 'QR');
+
 IconData _iconoTipo(String? t) =>
     t == 'Kiosco' ? Icons.storefront : (t == 'Almacén' ? Icons.shopping_basket : Icons.place);
 
@@ -244,6 +252,7 @@ class _ClienteDetalleState extends State<_ClienteDetalle> {
     if (prods.isEmpty || !mounted) return;
     int pid = prods.first['id'] as int;
     bool porCaja = true;
+    String medio = 'efectivo';
     final ctl = TextEditingController(text: '1');
     final ok = await showDialog<bool>(
       context: context,
@@ -259,6 +268,7 @@ class _ClienteDetalleState extends State<_ClienteDetalle> {
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   DropdownButtonFormField<int>(
                     value: pid,
@@ -282,8 +292,22 @@ class _ClienteDetalleState extends State<_ClienteDetalle> {
                     value: porCaja,
                     onChanged: (v) => setD(() => porCaja = v),
                   ),
+                  const Text('Forma de pago'),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 6,
+                    children: [
+                      for (final m in _medios)
+                        ChoiceChip(
+                          label: Text('${_emojiMedio(m)} ${_nombreMedio(m)}'),
+                          selected: medio == m,
+                          onSelected: (_) => setD(() => medio = m),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                   Text('$unidades unidades · ${pesos(precio * unidades)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ],
               ),
             ),
@@ -306,11 +330,12 @@ class _ClienteDetalleState extends State<_ClienteDetalle> {
         producto: prod,
         unidades: unidades,
         porCaja: porCaja,
-        clienteId: id);
+        clienteId: id,
+        medioPago: medio);
     await cargar();
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('Venta registrada: $unidades unidades')));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Venta registrada: $unidades unidades · ${_nombreMedio(medio)}')));
   }
 
   Future<void> comoLlegar() async {
@@ -376,10 +401,11 @@ class _ClienteDetalleState extends State<_ClienteDetalle> {
                     itemCount: ventas.length,
                     itemBuilder: (ctx, i) {
                       final v = ventas[i];
+                      final medio = (v['medio_pago'] ?? 'efectivo') as String;
                       return ListTile(
                         leading: const Icon(Icons.receipt, color: Estanque.agua),
                         title: Text('${v['nombre']} · ${v['unidades']} u'),
-                        subtitle: Text(v['fecha'] as String),
+                        subtitle: Text('${v['fecha']} · ${_emojiMedio(medio)} ${_nombreMedio(medio)}'),
                         trailing: Text(pesos(v['total'] as num),
                             style: const TextStyle(fontWeight: FontWeight.bold)),
                       );
