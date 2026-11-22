@@ -565,4 +565,86 @@ class _CobroSheetState extends State<_CobroSheet> {
 }
 
 // ---------- Ventas de hoy (con opción de anular) ----------
-class _Ventas
+class _VentasHoySheet extends StatefulWidget {
+  const _VentasHoySheet();
+  @override
+  State<_VentasHoySheet> createState() => _VentasHoySheetState();
+}
+
+class _VentasHoySheetState extends State<_VentasHoySheet> {
+  List<Map<String, dynamic>> ventas = [];
+
+  @override
+  void initState() {
+    super.initState();
+    cargar();
+  }
+
+  Future<void> cargar() async {
+    final v = await Db.ventasDelDia(hoy());
+    if (!mounted) return;
+    setState(() => ventas = v);
+  }
+
+  Future<void> anular(Map<String, dynamic> v) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('¿Anular esta venta?'),
+        content: Text('${v['nombre']} · ${v['unidades']} u · ${pesos(v['total'] as num)}'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('No')),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Sí, anular')),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await Db.borrarVenta(v['id'] as int);
+      cargar();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.7,
+      child: Column(
+        children: [
+          const Text('Ventas de hoy',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Expanded(
+            child: ventas.isEmpty
+                ? const Center(child: Text('Todavía no hay ventas hoy'))
+                : ListView.builder(
+                    itemCount: ventas.length,
+                    itemBuilder: (c, i) {
+                      final v = ventas[i];
+                      final medio = ((v['medio_pago'] ?? 'efectivo') as String);
+                      return ListTile(
+                        leading: Text(
+                            emojiDe({'emoji': v['emoji'], 'nombre': v['nombre']}),
+                            style: const TextStyle(fontSize: 28)),
+                        title: Text('${v['nombre']} · ${v['unidades']} u'),
+                        subtitle: Text(
+                            '${_emojiMedio(medio)} ${_nombreMedio(medio)}${v['cliente_id'] != null ? ' · cliente' : ''}'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(pesos(v['total'] as num),
+                                style: const TextStyle(fontWeight: FontWeight.bold)),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline),
+                              onPressed: () => anular(v),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
