@@ -12,6 +12,7 @@ Future<String> armarInforme(DateTime dia) async {
   final ventas = r['total']!;
   final costo = r['costo']!;
   final unidades = r['unidades']!.round();
+  final pagos = await Db.resumenPagos(fecha);
 
   final porProd = await db.rawQuery(
       'SELECT p.nombre, SUM(v.unidades) AS u, SUM(v.total) AS t FROM ventas v '
@@ -69,6 +70,15 @@ Future<String> armarInforme(DateTime dia) async {
   for (final p in porProd) {
     b.writeln('• ${p['nombre']}: ${(p['u'] as num).round()} u · ${pesos(p['t'] as num)}');
   }
+
+  if (ventas > 0) {
+    b.writeln();
+    b.writeln('COBROS');
+    b.writeln('💵 Efectivo: ${pesos(pagos['efectivo'] ?? 0)}');
+    b.writeln('🏦 Transferencia: ${pesos(pagos['transferencia'] ?? 0)}');
+    b.writeln('📱 QR: ${pesos(pagos['qr'] ?? 0)}');
+  }
+
   b.writeln();
   b.writeln('RESULTADO');
   b.writeln('Ganancia bruta: ${pesos(ventas - costo)}');
